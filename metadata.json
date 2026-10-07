@@ -1,0 +1,6 @@
+{
+  "name": "ApexSMM - Enterprise SMM Panel Platform",
+  "description": "High-performance SMM Panel built with Plain PHP 8.3, PDO MySQL, Alpine.js, and ApexCharts. Features multi-provider API sync, order automation, and modern admin & client dashboards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
