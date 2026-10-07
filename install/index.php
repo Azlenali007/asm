@@ -10,7 +10,7 @@ ini_set('display_errors', '1');
 
 $lockFile = __DIR__ . '/install.lock';
 if (file_exists($lockFile)) {
-    die("<!DOCTYPE html><html><head><title>ApexSMM Installed</title><style>body{font-family:system-ui;background:#090d16;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}div{background:#111827;padding:30px;border-radius:12px;border:1px solid #1f2937;text-align:center;max-width:480px;}</style></head><body><div><h2>ApexSMM is already installed</h2><p>For security, the installer is locked. To re-run, delete <code>install/install.lock</code>.</p><p><a href='/' style='color:#3b82f6;'>Go to Homepage &rarr;</a></p></div></body></html>");
+    die("<!DOCTYPE html><html><head><title>ApexSMM Installed</title><link rel='stylesheet' href='/assets/css/style.css'><style>body{background:#f8fafc;color:#0f172a;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;}div{background:#ffffff;padding:36px;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 10px 25px rgba(0,0,0,0.05);text-align:center;max-width:480px;}h2{margin-bottom:12px;font-size:20px;font-weight:700;color:#0f172a;}p{color:#64748b;font-size:14px;margin-bottom:20px;}code{background:#f1f5f9;padding:2px 6px;border-radius:4px;color:#7c3aed;font-size:13px;}</style></head><body><div><h2>ApexSMM is already installed</h2><p>For security, the installer is locked. To re-run, remove <code>install/install.lock</code>.</p><p><a href='/' class='btn btn-primary'>Go to Homepage &rarr;</a></p></div></body></html>");
 }
 
 $step = (int)($_GET['step'] ?? 1);
@@ -60,23 +60,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $step === 2) {
             // Execute schema
             $schemaFile = dirname(__DIR__) . '/database/schema.sql';
             if (file_exists($schemaFile)) {
-                $sqlContent = file_get_contents($schemaFile);
-                $pdo->exec($sqlContent);
+                $sql = file_get_contents($schemaFile);
+                $pdo->exec($sql);
             }
 
-            // Update or Insert custom Admin
+            // Create admin user
             $hashedPass = password_hash($adminPass, PASSWORD_BCRYPT, ['cost' => 12]);
-            $apiKey = 'smm_' . bin2hex(random_bytes(28));
+            $adminApiKey = 'smm_admin_' . bin2hex(random_bytes(24));
 
-            $stmt = $pdo->prepare("SELECT id FROM users WHERE id = 1");
-            $stmt->execute();
-            if ($stmt->fetch()) {
-                $upd = $pdo->prepare("UPDATE users SET username = :u, email = :e, password = :p, api_key = :k WHERE id = 1");
-                $upd->execute([':u' => $adminUser, ':e' => $adminEmail, ':p' => $hashedPass, ':k' => $apiKey]);
-            } else {
-                $ins = $pdo->prepare("INSERT INTO users (id, username, email, password, role, balance, status, api_key) VALUES (1, :u, :e, :p, 'admin', 500.00, 'active', :k)");
-                $ins->execute([':u' => $adminUser, ':e' => $adminEmail, ':p' => $hashedPass, ':k' => $apiKey]);
-            }
+            $stmt = $pdo->prepare("INSERT INTO users (username, email, password, role, balance, spent, status, api_key) VALUES (:u, :e, :p, 'admin', 500.00, 0.00, 'active', :k) ON DUPLICATE KEY UPDATE password = :p2");
+            $stmt->execute([
+                ':u'  => $adminUser,
+                ':e'  => $adminEmail,
+                ':p'  => $hashedPass,
+                ':k'  => $adminApiKey,
+                ':p2' => $hashedPass,
+            ]);
 
             // Save Database Configuration
             $dbConfigFile = dirname(__DIR__) . '/config/database.php';
@@ -99,198 +98,158 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $step === 2) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ApexSMM Installation Wizard</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
     <style>
-        :root {
-            --bg-body: #090d16;
-            --bg-card: #111827;
-            --border: #1f2937;
-            --text-primary: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --success: #10b981;
-            --danger: #ef4444;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-primary);
+            background-color: var(--bg-body, #f8fafc);
+            color: var(--text-primary, #0f172a);
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
             padding: 24px;
         }
-        .installer-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
+        .installer-wrapper {
             width: 100%;
-            max-width: 600px;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            max-width: 620px;
+        }
+        .installer-card {
+            background-color: #ffffff;
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.08);
             overflow: hidden;
         }
-        .header {
+        .installer-header {
             padding: 28px 32px;
-            border-bottom: 1px solid var(--border);
-            background: linear-gradient(180deg, #1e293b 0%, #111827 100%);
+            border-bottom: 1px solid var(--border, #e2e8f0);
+            background: linear-gradient(135deg, #f5f3ff 0%, #ffffff 100%);
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
-        .header h1 { font-size: 22px; font-weight: 700; }
-        .header p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
-        .body { padding: 32px; }
+        .installer-body { padding: 32px; }
         .req-list { list-style: none; margin-bottom: 24px; }
         .req-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 12px 16px;
-            background: rgba(255,255,255,0.02);
-            border: 1px solid var(--border);
+            background: #ffffff;
+            border: 1px solid var(--border, #e2e8f0);
             border-radius: 8px;
             margin-bottom: 8px;
             font-size: 14px;
         }
-        .badge {
-            font-size: 12px;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 9999px;
-        }
-        .badge-pass { background: rgba(16, 185, 129, 0.2); color: var(--success); }
-        .badge-fail { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-        .btn {
-            display: inline-block;
-            background: var(--accent);
-            color: #fff;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
+        .badge-pass { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .badge-fail { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        .section-heading {
             font-size: 15px;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            width: 100%;
-            text-align: center;
-        }
-        .btn:hover { background: var(--accent-hover); }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
-        .form-control {
-            width: 100%;
-            padding: 10px 14px;
-            background: #0f172a;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 14px;
-        }
-        .form-control:focus { outline: none; border-color: var(--accent); }
-        .alert-error {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
-            padding: 14px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 13px;
-        }
-        .section-title {
-            font-size: 15px;
-            font-weight: 600;
+            font-weight: 700;
+            color: var(--text-primary, #0f172a);
             margin: 20px 0 12px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border, #e2e8f0);
         }
     </style>
 </head>
-<body>
-<div class="installer-card">
-    <div class="header">
-        <h1>ApexSMM Enterprise Installer</h1>
-        <p>Step <?= $step ?> of 3: <?= $step === 1 ? 'Server Requirements' : ($step === 2 ? 'Database & Admin Setup' : 'Installation Complete') ?></p>
-    </div>
-    <div class="body">
-        <?php if (!empty($errors)): ?>
-            <div class="alert-error">
-                <?php foreach ($errors as $e): ?>
-                    <div>&bull; <?= htmlspecialchars($e) ?></div>
-                <?php endforeach; ?>
+<body class="theme-light">
+<div class="installer-wrapper">
+    <div class="installer-card">
+        <div class="installer-header">
+            <div class="logo-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             </div>
-        <?php endif; ?>
-
-        <?php if ($step === 1): ?>
-            <ul class="req-list">
-                <?php foreach ($requirements as $name => $passed): ?>
-                    <li class="req-item">
-                        <span><?= htmlspecialchars($name) ?></span>
-                        <span class="badge <?= $passed ? 'badge-pass' : 'badge-fail' ?>">
-                            <?= $passed ? 'PASSED' : 'FAILED' ?>
-                        </span>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-
-            <?php if ($allPassed): ?>
-                <a href="?step=2" class="btn">Continue to Database Setup &rarr;</a>
-            <?php else: ?>
-                <p style="color: var(--danger); font-size: 14px; margin-bottom: 16px;">Some server requirements are missing. Please verify PHP extensions before proceeding.</p>
-                <a href="?step=1" class="btn" style="background: #374151;">Re-check Requirements</a>
+            <div>
+                <h1 style="font-size: 20px; font-weight: 800; color: #0f172a;">Apex<span style="color: #7c3aed;">SMM</span> Enterprise Installer</h1>
+                <p style="color: #64748b; font-size: 13px; margin-top: 2px;">Step <?= $step ?> of 3: <?= $step === 1 ? 'Server Requirements Verification' : ($step === 2 ? 'Database & Administrator Setup' : 'Installation Finished') ?></p>
+            </div>
+        </div>
+        <div class="installer-body">
+            <?php if (!empty($errors)): ?>
+                <div class="alert alert-error">
+                    <span class="alert-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+                    <div class="alert-content">
+                        <?php foreach ($errors as $e): ?>
+                            <div>&bull; <?= htmlspecialchars($e) ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
             <?php endif; ?>
 
-        <?php elseif ($step === 2): ?>
-            <form method="POST" action="?step=2">
-                <div class="section-title">Database Credentials (MySQL / MariaDB)</div>
-                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
-                    <div class="form-group">
-                        <label>Host</label>
-                        <input type="text" name="db_host" class="form-control" value="127.0.0.1" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Port</label>
-                        <input type="number" name="db_port" class="form-control" value="3306" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Database Name</label>
-                    <input type="text" name="db_name" class="form-control" placeholder="smm_panel" required>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" name="db_user" class="form-control" value="root" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" name="db_pass" class="form-control" placeholder="Optional">
-                    </div>
-                </div>
+            <?php if ($step === 1): ?>
+                <ul class="req-list">
+                    <?php foreach ($requirements as $name => $passed): ?>
+                        <li class="req-item">
+                            <span style="font-weight: 500;"><?= htmlspecialchars($name) ?></span>
+                            <span class="badge <?= $passed ? 'badge-pass' : 'badge-fail' ?>">
+                                <?= $passed ? 'AVAILABLE' : 'MISSING' ?>
+                            </span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
 
-                <div class="section-title">Master Administrator Account</div>
-                <div class="form-group">
-                    <label>Admin Username</label>
-                    <input type="text" name="admin_username" class="form-control" value="admin" required>
-                </div>
-                <div class="form-group">
-                    <label>Admin Email</label>
-                    <input type="email" name="admin_email" class="form-control" value="admin@apexsmm.com" required>
-                </div>
-                <div class="form-group">
-                    <label>Admin Password</label>
-                    <input type="password" name="admin_password" class="form-control" required placeholder="Minimum 6 characters">
-                </div>
+                <?php if ($allPassed): ?>
+                    <a href="?step=2" class="btn btn-primary btn-block btn-lg">Continue to Database Setup &rarr;</a>
+                <?php else: ?>
+                    <p style="color: var(--danger, #ef4444); font-size: 14px; margin-bottom: 16px;">Some server requirements are missing. Please verify PHP extensions before proceeding.</p>
+                    <a href="?step=1" class="btn btn-secondary btn-block">Re-check Requirements</a>
+                <?php endif; ?>
 
-                <button type="submit" class="btn" style="margin-top: 12px;">Install ApexSMM & Migrate DB</button>
-            </form>
+            <?php elseif ($step === 2): ?>
+                <form method="POST" action="?step=2">
+                    <div class="section-heading">Database Connection (MySQL 8+ / MariaDB)</div>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label>Host</label>
+                            <input type="text" name="db_host" class="form-control" value="127.0.0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Port</label>
+                            <input type="number" name="db_port" class="form-control" value="3306" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Database Name</label>
+                        <input type="text" name="db_name" class="form-control" placeholder="smm_panel" required>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" name="db_user" class="form-control" value="root" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" name="db_pass" class="form-control" placeholder="Optional">
+                        </div>
+                    </div>
 
-        <?php elseif ($step === 3): ?>
-            <div style="text-align: center; padding: 20px 0;">
-                <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(16, 185, 129, 0.2); color: var(--success); display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 16px;">&#10003;</div>
-                <h2 style="font-size: 20px; margin-bottom: 8px;">Installation Completed!</h2>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Your database tables have been migrated, demo services seeded, and the installation lock has been created.</p>
-                <a href="/login.php" class="btn">Proceed to Login &rarr;</a>
-            </div>
-        <?php endif; ?>
+                    <div class="section-heading">Master Administrator Account</div>
+                    <div class="form-group">
+                        <label>Admin Username</label>
+                        <input type="text" name="admin_username" class="form-control" value="admin" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Admin Email</label>
+                        <input type="email" name="admin_email" class="form-control" value="admin@apexsmm.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Admin Password</label>
+                        <input type="password" name="admin_password" class="form-control" required placeholder="Minimum 6 characters">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 12px;">Install ApexSMM & Migrate DB</button>
+                </form>
+
+            <?php elseif ($step === 3): ?>
+                <div style="text-align: center; padding: 20px 0;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 16px;">&#10003;</div>
+                    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Installation Completed!</h2>
+                    <p style="color: #64748b; font-size: 14px; margin-bottom: 24px;">Your database tables have been migrated, demo services seeded, and the installation lock has been created.</p>
+                    <a href="/login.php" class="btn btn-primary btn-block btn-lg">Proceed to Sign In &rarr;</a>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 </body>

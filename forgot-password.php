@@ -25,9 +25,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password - ApexSMM Enterprise</title>
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
 </head>
-<body class="theme-dark auth-page">
+<body class="theme-light auth-page">
     <div class="auth-wrapper">
         <div class="auth-card">
             <div class="auth-header">

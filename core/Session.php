@@ -1,7 +1,7 @@
 <?php
 /**
  * ApexSMM - Enterprise SMM Panel Platform
- * Core Session Manager (Strict Cookie Security & Flash Messages)
+ * Core Session Manager (Strict Cookie Security, Cross-Context & Multi-Type Flash Messages)
  */
 
 namespace Core;
@@ -9,6 +9,7 @@ namespace Core;
 class Session
 {
     private static bool $started = false;
+    private static array $flashMessages = [];
 
     public static function start(): void
     {
@@ -29,15 +30,23 @@ class Session
             'samesite' => 'Lax',
         ];
 
-        session_name($sessConfig['name']);
+        session_name($sessConfig['name'] ?? 'APEX_SMM_SESS');
+
+        $isHttps = function_exists('is_https') ? is_https() : (
+            (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+            || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+        );
+
+        // In HTTPS/iframe preview environments, SameSite=None; Secure ensures cookie persistence
+        $sameSite = $isHttps ? 'None' : 'Lax';
 
         session_set_cookie_params([
-            'lifetime' => $sessConfig['lifetime'],
-            'path'     => $sessConfig['path'],
-            'domain'   => $sessConfig['domain'],
-            'secure'   => $sessConfig['secure'] || (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
-            'httponly' => $sessConfig['httponly'],
-            'samesite' => $sessConfig['samesite'],
+            'lifetime' => $sessConfig['lifetime'] ?? (86400 * 7),
+            'path'     => $sessConfig['path'] ?? '/',
+            'domain'   => $sessConfig['domain'] ?? null,
+            'secure'   => $isHttps,
+            'httponly' => true,
+            'samesite' => $sameSite,
         ]);
 
         ini_set('session.use_only_cookies', '1');
@@ -46,8 +55,14 @@ class Session
         session_start();
         self::$started = true;
 
-        // Auto-expire idle sessions if needed
-        if (isset($_SESSION['_last_activity']) && (time() - $_SESSION['_last_activity'] > ($sessConfig['lifetime']))) {
+        // Move incoming flash messages into request memory and clear from $_SESSION
+        if (isset($_SESSION['_flash']) && is_array($_SESSION['_flash'])) {
+            self::$flashMessages = $_SESSION['_flash'];
+            unset($_SESSION['_flash']);
+        }
+
+        // Idle session check
+        if (isset($_SESSION['_last_activity']) && (time() - $_SESSION['_last_activity'] > ($sessConfig['lifetime'] ?? (86400 * 7)))) {
             self::destroy();
             session_start();
         }
@@ -78,27 +93,36 @@ class Session
         unset($_SESSION[$key]);
     }
 
-    public static function flash(string $key, mixed $value = null): mixed
+    /**
+     * Set a flash message for the next/current request, or retrieve current request's flash
+     * Supports: success, error, warning, info
+     */
+    public static function flash(string $type, ?string $message = null): ?string
     {
         self::start();
-        if ($value !== null) {
-            $_SESSION['_flash'][$key] = $value;
+
+        if ($message !== null) {
+            $_SESSION['_flash'][$type] = $message;
+            self::$flashMessages[$type] = $message;
             return null;
         }
 
-        if (isset($_SESSION['_flash'][$key])) {
-            $msg = $_SESSION['_flash'][$key];
-            unset($_SESSION['_flash'][$key]);
-            return $msg;
-        }
-
-        return null;
+        return self::$flashMessages[$type] ?? ($_SESSION['_flash'][$type] ?? null);
     }
 
-    public static function hasFlash(string $key): bool
+    public static function hasFlash(string $type): bool
     {
         self::start();
-        return isset($_SESSION['_flash'][$key]);
+        return !empty(self::$flashMessages[$type]) || !empty($_SESSION['_flash'][$type]);
+    }
+
+    public static function getAllFlashes(): array
+    {
+        self::start();
+        $flashes = array_merge(self::$flashMessages, $_SESSION['_flash'] ?? []);
+        self::$flashMessages = [];
+        unset($_SESSION['_flash']);
+        return $flashes;
     }
 
     public static function regenerate(): void
@@ -111,6 +135,7 @@ class Session
     {
         if (session_status() === PHP_SESSION_ACTIVE) {
             $_SESSION = [];
+            self::$flashMessages = [];
             if (ini_get("session.use_cookies")) {
                 $params = session_get_cookie_params();
                 setcookie(

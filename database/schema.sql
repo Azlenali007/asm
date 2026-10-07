@@ -202,12 +202,11 @@ INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
 ('referral_percent', '5.00')
 ON DUPLICATE KEY UPDATE `setting_key` = `setting_key`;
 
--- Insert Default Admin (Password: Admin@123456)
--- Bcrypt Hash of Admin@123456: $2y$12$6G2G3iW/3m0w9M6x1cO7e.0yvWj3u/XGqG31y95vFm9i8k8m4JpS2
+-- Insert Default Admin: admin / Admin@123456
 INSERT INTO `users` (`id`, `username`, `email`, `password`, `role`, `balance`, `spent`, `status`, `api_key`)
 VALUES 
-(1, 'admin', 'admin@apexsmm.com', '$2y$12$0r4h8K2y8zR2jH3gA1/O.eUq8E6KjA5P7O9Y0T3v6X7B9Z1V5G6Ki', 'admin', 500.0000, 0.0000, 'active', 'smm_admin_enterprise_key_998811'),
-(2, 'demouser', 'demo@apexsmm.com', '$2y$12$0r4h8K2y8zR2jH3gA1/O.eUq8E6KjA5P7O9Y0T3v6X7B9Z1V5G6Ki', 'user', 84.5000, 165.2000, 'active', 'smm_demo_client_key_112233')
+(1, 'admin', 'admin@apexsmm.com', '$2y$12$E2F.yQ8t790kYxlV7A21DOZ8htaXGve2DG4qbQe8BX0d.sud8jRlm', 'admin', 500.0000, 0.0000, 'active', 'smm_admin_enterprise_key_998811'),
+(2, 'demouser', 'demo@apexsmm.com', '$2y$12$NhycMHSzuk/WnV/r3h5Ye.nERI.Nl/WlRIbYyl0f00wIe.OFdqGFO', 'user', 84.5000, 165.2000, 'active', 'smm_demo_client_key_112233')
 ON DUPLICATE KEY UPDATE `id` = `id`;
 
 -- Insert Sample Categories

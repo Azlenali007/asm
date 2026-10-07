@@ -28,12 +28,12 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ApexSMM - The #1 Enterprise Social Media Marketing Panel</title>
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
     <!-- Alpine.js & ApexCharts for Interactive Real-Time UI -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </head>
-<body class="theme-dark" x-data="{ mobileNav: false, selectedCategory: 'all', search: '' }">
+<body class="theme-light" x-data="{ mobileNav: false, selectedCategory: 'all', search: '' }">
 
     <!-- Top Navigation Bar -->
     <nav class="navbar">

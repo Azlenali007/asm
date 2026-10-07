@@ -15,7 +15,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   </head>
-  <body class="theme-dark" x-data="smmApp()" x-init="init()">
+  <body class="theme-light" x-data="smmApp()" x-init="init()">
 
     <!-- Top Universal Navigation -->
     <nav class="navbar">
@@ -35,16 +35,21 @@
           <button class="nav-link" :class="{ 'active': currentView === 'orders' }" @click="currentView = 'orders'">Orders History</button>
           <button class="nav-link" :class="{ 'active': currentView === 'admin-dashboard' }" @click="currentView = 'admin-dashboard'">Admin Control</button>
           <button class="nav-link" :class="{ 'active': currentView === 'api-docs' }" @click="currentView = 'api-docs'">API Docs (v2)</button>
+          <button class="nav-link" :class="{ 'active': currentView === 'register' }" @click="currentView = 'register'">Register Account</button>
+          <button class="nav-link" :class="{ 'active': currentView === 'login' }" @click="currentView = 'login'">Sign In</button>
         </div>
 
         <div class="nav-actions">
-          <div class="header-balance" x-show="currentView !== 'landing' && currentView !== 'admin-dashboard'">
+          <div class="header-balance" x-show="currentView !== 'landing' && currentView !== 'admin-dashboard' && currentView !== 'register' && currentView !== 'login'">
             Balance: <strong style="color: #10b981;" x-text="'$' + userBalance.toFixed(2)"></strong>
           </div>
-          <button class="btn btn-sm btn-primary" x-show="currentView === 'landing'" @click="currentView = 'new-order'">
-            Place Order
+          <button class="btn btn-sm btn-ghost" x-show="currentView === 'landing' || currentView === 'register'" @click="currentView = 'login'">
+            Sign In
           </button>
-          <button class="btn btn-sm btn-danger" x-show="currentView !== 'admin-dashboard'" @click="currentView = 'admin-dashboard'">
+          <button class="btn btn-sm btn-primary" x-show="currentView === 'landing' || currentView === 'login'" @click="currentView = 'register'">
+            Create Account
+          </button>
+          <button class="btn btn-sm btn-danger" x-show="currentView !== 'admin-dashboard' && currentView !== 'landing' && currentView !== 'register' && currentView !== 'login'" @click="currentView = 'admin-dashboard'">
             Admin Panel
           </button>
           <button class="btn btn-sm btn-secondary" x-show="currentView === 'admin-dashboard'" @click="currentView = 'user-dashboard'">
@@ -66,8 +71,8 @@
           <p class="hero-subtitle">Direct wholesale provider rates for Instagram, YouTube, TikTok, Telegram and Twitter. Automated order fulfillment with multi-provider API sync, automated auto-refill, and instant API v2.</p>
           
           <div class="hero-cta-group">
-            <button class="btn btn-primary btn-lg" @click="currentView = 'new-order'">Instant Order Wizard</button>
-            <button class="btn btn-secondary btn-lg" @click="currentView = 'user-dashboard'">Open Client Dashboard</button>
+            <button class="btn btn-primary btn-lg" @click="currentView = 'register'">Create Free Account</button>
+            <button class="btn btn-secondary btn-lg" @click="currentView = 'new-order'">Instant Order Wizard</button>
           </div>
 
           <div class="hero-stats-grid">
@@ -98,7 +103,7 @@
             <p class="section-desc">Real-time rates per 1,000 units with automated provider dispatch.</p>
           </div>
           <div class="search-filter-box">
-            <input type="text" x-model="searchQuery" placeholder="Search service name, ID, platform..." class="input-search" />
+            <input type="text" x-model="searchQuery" placeholder="Search service name, ID, platform..." class="form-control" style="max-width: 280px;" />
           </div>
         </div>
 
@@ -151,19 +156,144 @@
       </section>
     </main>
 
+    <!-- VIEW: REGISTER ACCOUNT -->
+    <main x-show="currentView === 'register'" class="auth-page">
+      <div class="auth-wrapper">
+        <div class="auth-card">
+          <div class="auth-header">
+            <a href="#" class="brand-logo" @click.prevent="currentView = 'landing'" style="justify-content: center; margin-bottom: 16px;">
+              <div class="logo-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              </div>
+              <span>Apex<span>SMM</span></span>
+            </a>
+            <h2>Create Account</h2>
+            <p>Instant access to wholesale SMM rates and API integration</p>
+          </div>
+
+          <!-- Real-Time Error Alert -->
+          <div class="alert alert-error" x-show="regError" x-cloak>
+            <span class="alert-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </span>
+            <div class="alert-content" x-text="regError"></div>
+          </div>
+
+          <!-- Registration Form -->
+          <form @submit.prevent="handleRegister()" class="auth-form">
+            <div class="form-group">
+              <label for="reg_username">Username</label>
+              <input type="text" id="reg_username" x-model="regForm.username" class="form-control" placeholder="Choose a username (3-30 characters)" required autofocus />
+              <span class="field-help">Letters, numbers, and underscores only</span>
+            </div>
+
+            <div class="form-group">
+              <label for="reg_email">Email Address</label>
+              <input type="email" id="reg_email" x-model="regForm.email" class="form-control" placeholder="name@example.com" required />
+            </div>
+
+            <div class="form-group">
+              <label for="reg_password">Password</label>
+              <input type="password" id="reg_password" x-model="regForm.password" class="form-control" placeholder="Minimum 6 characters" required />
+            </div>
+
+            <div class="form-group">
+              <label for="reg_confirm_password">Confirm Password</label>
+              <input type="password" id="reg_confirm_password" x-model="regForm.confirm_password" class="form-control" placeholder="Re-enter your password" required />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 10px;">
+              Register Free Account
+            </button>
+          </form>
+
+          <div class="auth-footer">
+            Already registered? <a href="#" @click.prevent="currentView = 'login'">Sign in here</a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- VIEW: SIGN IN / LOGIN -->
+    <main x-show="currentView === 'login'" class="auth-page">
+      <div class="auth-wrapper">
+        <div class="auth-card">
+          <div class="auth-header">
+            <a href="#" class="brand-logo" @click.prevent="currentView = 'landing'" style="justify-content: center; margin-bottom: 16px;">
+              <div class="logo-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              </div>
+              <span>Apex<span>SMM</span></span>
+            </a>
+            <h2>Welcome Back</h2>
+            <p>Sign in to your account to manage orders and funds</p>
+          </div>
+
+          <!-- Flash Success Alert (from successful registration) -->
+          <div class="alert alert-success" x-show="loginSuccess" x-cloak>
+            <span class="alert-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <div class="alert-content" x-text="loginSuccess"></div>
+          </div>
+
+          <!-- Error Alert -->
+          <div class="alert alert-error" x-show="loginError" x-cloak>
+            <span class="alert-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </span>
+            <div class="alert-content" x-text="loginError"></div>
+          </div>
+
+          <!-- Login Form -->
+          <form @submit.prevent="handleLogin()" class="auth-form">
+            <div class="form-group">
+              <label for="login_username">Username or Email</label>
+              <input type="text" id="login_username" x-model="loginForm.username" class="form-control" placeholder="Enter username or email" required autofocus />
+            </div>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label for="login_password" style="margin: 0;">Password</label>
+                <a href="#" @click.prevent="alert('Password reset link demo dispatched.')" style="font-size: 13px; color: var(--accent); font-weight: 500;">Forgot Password?</a>
+              </div>
+              <input type="password" id="login_password" x-model="loginForm.password" class="form-control" placeholder="Enter password (e.g. Demo@123456)" required />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 10px;">
+              Sign In to Account
+            </button>
+          </form>
+
+          <div class="auth-footer">
+            Don't have an account yet? <a href="#" @click.prevent="currentView = 'register'">Create account</a>
+          </div>
+
+          <div class="credentials-box">
+            <div style="font-weight: 700; color: #6d28d9; margin-bottom: 6px;">Demo Accounts Available:</div>
+            <div>&bull; Client: <strong>demouser</strong> / <strong>Demo@123456</strong></div>
+            <div>&bull; Administrator: <strong>admin</strong> / <strong>Admin@123456</strong></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
     <!-- VIEW 2: CLIENT DASHBOARD -->
     <main x-show="currentView === 'user-dashboard'" class="panel-body" style="max-width: 1200px; margin: 0 auto; padding: 24px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div>
           <h2 style="font-size: 22px; font-weight: 700;">Client Dashboard</h2>
-          <p style="color: var(--text-muted); font-size: 13px;">Welcome back, <strong>demouser</strong> (Wholesale Tier 1)</p>
+          <p style="color: var(--text-muted); font-size: 13px;">Welcome back, <strong x-text="currentUser ? currentUser.username : 'demouser'"></strong> (Wholesale Tier 1)</p>
         </div>
-        <button class="btn btn-primary btn-sm" @click="currentView = 'new-order'">+ Create Order</button>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary btn-sm" @click="currentView = 'new-order'">+ Create Order</button>
+          <button class="btn btn-ghost btn-sm" @click="logout()">Sign Out</button>
+        </div>
       </div>
 
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+          <div class="metric-icon" style="background: #eff6ff; color: #3b82f6;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 10h20"/></svg>
           </div>
           <div class="metric-data">
@@ -174,7 +304,7 @@
         </div>
 
         <div class="metric-card">
-          <div class="metric-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+          <div class="metric-icon" style="background: #ecfdf5; color: #10b981;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
           </div>
           <div class="metric-data">
@@ -184,7 +314,7 @@
         </div>
 
         <div class="metric-card">
-          <div class="metric-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+          <div class="metric-icon" style="background: #fffbeb; color: #f59e0b;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
           </div>
           <div class="metric-data">
@@ -195,14 +325,14 @@
         </div>
 
         <div class="metric-card">
-          <div class="metric-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
+          <div class="metric-icon" style="background: #f5f3ff; color: #7c3aed;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
           </div>
           <div class="metric-data">
             <div class="metric-label">Support Tickets</div>
             <div class="metric-value">0 Open</div>
           </div>
-          <span class="metric-link" style="color: #a855f7;">24/7 Desk</span>
+          <span class="metric-link" style="color: #7c3aed;">24/7 Desk</span>
         </div>
       </div>
 
@@ -298,94 +428,50 @@
               <div class="form-group">
                 <label>Service</label>
                 <select class="form-control" x-model.number="orderForm.service_id" @change="onOrderServiceChange()">
-                  <template x-for="srv in activeCategoryServices" :key="srv.id">
-                    <option :value="srv.id" x-text="'#' + srv.id + ' - ' + srv.name + ' ($' + srv.rate.toFixed(4) + ' / 1K)'"></option>
+                  <template x-for="s in activeCategoryServices" :key="s.id">
+                    <option :value="s.id" x-text="'#' + s.id + ' - ' + s.name + ' ($' + s.rate.toFixed(4) + '/1K)'"></option>
                   </template>
                 </select>
               </div>
 
               <div class="form-group">
-                <label>Target Link / Profile URL</label>
-                <input type="text" class="form-control" x-model="orderForm.link" placeholder="https://instagram.com/p/... or profile handle" required />
-                <span class="field-help">Make sure the profile is set to public.</span>
+                <label>Target URL / Link</label>
+                <input type="text" class="form-control" x-model="orderForm.link" placeholder="e.g. https://instagram.com/profile" required />
               </div>
 
               <div class="form-group" x-show="currentService && currentService.type !== 'custom_comments'">
-                <div style="display: flex; justify-content: space-between;">
-                  <label>Quantity</label>
-                  <span class="field-help" x-show="currentService" x-text="'Min: ' + (currentService ? currentService.min.toLocaleString() : 0) + ' | Max: ' + (currentService ? currentService.max.toLocaleString() : 0)"></span>
-                </div>
-                <input type="number" class="form-control" x-model.number="orderForm.quantity" @input="calculateOrderCharge()" placeholder="e.g. 1000" />
+                <label>Quantity</label>
+                <input type="number" class="form-control" x-model.number="orderForm.quantity" @input="calculateOrderCharge()" :min="currentService ? currentService.min : 10" :max="currentService ? currentService.max : 100000" required />
+                <span class="field-help" x-show="currentService" x-text="'Min: ' + currentService.min.toLocaleString() + ' &bull; Max: ' + currentService.max.toLocaleString()"></span>
               </div>
 
               <div class="form-group" x-show="currentService && currentService.type === 'custom_comments'">
                 <label>Custom Comments (1 per line)</label>
-                <textarea rows="4" class="form-control" x-model="orderForm.comments" @input="onCommentsChange()" placeholder="Awesome post!&#10;Incredible quality!&#10;Highly recommended!"></textarea>
-                <span class="field-help" x-text="'Comments count: ' + commentsCount"></span>
+                <textarea class="form-control" rows="5" x-model="orderForm.comments" @input="onCommentsChange()" placeholder="Great profile!&#10;Love this post!&#10;Awesome content!"></textarea>
+                <span class="field-help" x-text="commentsCount + ' comments entered'"></span>
               </div>
 
-              <div class="charge-summary-box">
-                <div class="charge-row">
-                  <span>Wholesale Rate / 1K:</span>
-                  <strong x-text="'$' + (currentService ? currentService.rate.toFixed(4) : '0.0000')"></strong>
-                </div>
-                <div class="charge-row total">
-                  <span>Estimated Total Charge:</span>
-                  <span class="charge-amount" x-text="'$' + orderCharge.toFixed(4)"></span>
-                </div>
-                <div x-show="orderCharge > userBalance" class="warning-text">
-                  Insufficient balance! You need <span x-text="'$' + (orderCharge - userBalance).toFixed(2)"></span> more. Click "+ Deposit" to add funds.
-                </div>
+              <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; color: var(--text-secondary);">Total Charge:</span>
+                <span style="font-size: 20px; font-weight: 800; color: var(--accent);" x-text="'$' + orderCharge.toFixed(4)"></span>
               </div>
 
-              <button type="submit" class="btn btn-primary btn-block btn-lg" :disabled="orderCharge > userBalance || orderForm.quantity <= 0" style="margin-top: 18px;">
-                Confirm & Submit Order
-              </button>
+              <button type="submit" class="btn btn-primary btn-block btn-lg">Submit Instant Order</button>
             </form>
           </div>
         </div>
 
-        <div class="card" style="flex: 2;">
+        <div class="card" style="flex: 2;" x-show="currentService">
           <div class="card-header">
-            <h3>Service Specifications</h3>
+            <h3>Service Details</h3>
           </div>
           <div class="card-body">
-            <template x-if="currentService">
-              <div>
-                <h4 style="font-size: 15px; margin-bottom: 12px; color: #fff;" x-text="currentService.name"></h4>
-                <div class="spec-grid">
-                  <div class="spec-item">
-                    <div class="spec-label">Service ID</div>
-                    <div class="spec-value" x-text="'#' + currentService.id"></div>
-                  </div>
-                  <div class="spec-item">
-                    <div class="spec-label">Rate / 1K</div>
-                    <div class="spec-value" style="color: #10b981;" x-text="'$' + currentService.rate.toFixed(4)"></div>
-                  </div>
-                  <div class="spec-item">
-                    <div class="spec-label">Min Limit</div>
-                    <div class="spec-value" x-text="currentService.min.toLocaleString()"></div>
-                  </div>
-                  <div class="spec-item">
-                    <div class="spec-label">Max Limit</div>
-                    <div class="spec-value" x-text="currentService.max.toLocaleString()"></div>
-                  </div>
-                  <div class="spec-item">
-                    <div class="spec-label">Auto Refill</div>
-                    <div class="spec-value" x-text="currentService.refill ? 'Guaranteed (30d)' : 'No Refill'"></div>
-                  </div>
-                  <div class="spec-item">
-                    <div class="spec-label">Cancelable</div>
-                    <div class="spec-value" x-text="currentService.cancel ? 'Yes' : 'No'"></div>
-                  </div>
-                </div>
-
-                <div style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px;">
-                  <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">DESCRIPTION & NOTES</div>
-                  <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;" x-text="currentService.description"></div>
-                </div>
-              </div>
-            </template>
+            <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 8px;" x-text="currentService ? currentService.name : ''"></h4>
+            <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+              <span class="badge badge-success" x-show="currentService && currentService.refill">30d Auto-Refill</span>
+              <span class="badge badge-info" x-show="currentService && currentService.cancel">Cancelable</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;" x-text="currentService ? currentService.description : ''"></p>
           </div>
         </div>
       </div>
@@ -393,22 +479,20 @@
 
     <!-- VIEW 4: ORDERS HISTORY -->
     <main x-show="currentView === 'orders'" class="panel-body" style="max-width: 1200px; margin: 0 auto; padding: 24px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h2 style="font-size: 22px; font-weight: 700;">Orders History</h2>
-        <button class="btn btn-primary btn-sm" @click="currentView = 'new-order'">+ Place New Order</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 22px; font-weight: 700;">Order History</h2>
+        <button class="btn btn-primary btn-sm" @click="currentView = 'new-order'">+ Place Order</button>
       </div>
 
-      <div class="order-tabs-bar">
-        <div class="tabs-group">
-          <button class="tab-link" :class="{ 'active': orderTab === 'all' }" @click="orderTab = 'all'">All (<span x-text="ordersList.length"></span>)</button>
-          <button class="tab-link" :class="{ 'active': orderTab === 'pending' }" @click="orderTab = 'pending'">Pending</button>
-          <button class="tab-link" :class="{ 'active': orderTab === 'inprogress' }" @click="orderTab = 'inprogress'">In Progress</button>
-          <button class="tab-link" :class="{ 'active': orderTab === 'completed' }" @click="orderTab = 'completed'">Completed</button>
-          <button class="tab-link" :class="{ 'active': orderTab === 'canceled' }" @click="orderTab = 'canceled'">Canceled</button>
-        </div>
+      <div class="category-tabs">
+        <button class="tab-btn" :class="{ 'active': orderTab === 'all' }" @click="orderTab = 'all'">All (<span x-text="ordersList.length"></span>)</button>
+        <button class="tab-btn" :class="{ 'active': orderTab === 'pending' }" @click="orderTab = 'pending'">Pending</button>
+        <button class="tab-btn" :class="{ 'active': orderTab === 'inprogress' }" @click="orderTab = 'inprogress'">In Progress</button>
+        <button class="tab-btn" :class="{ 'active': orderTab === 'completed' }" @click="orderTab = 'completed'">Completed</button>
+        <button class="tab-btn" :class="{ 'active': orderTab === 'canceled' }" @click="orderTab = 'canceled'">Canceled</button>
       </div>
 
-      <div class="card" style="margin-top: 16px;">
+      <div class="card">
         <div class="card-body" style="padding: 0;">
           <div class="table-responsive">
             <table class="data-table">
@@ -416,12 +500,12 @@
                 <tr>
                   <th>ID</th>
                   <th>Service</th>
-                  <th>Target Link</th>
+                  <th>Link</th>
+                  <th>Qty</th>
                   <th>Charge</th>
-                  <th>Start / Remains</th>
-                  <th>Quantity</th>
                   <th>Status</th>
-                  <th>Created At</th>
+                  <th>Remains</th>
+                  <th>Date</th>
                   <th style="text-align: right;">Action</th>
                 </tr>
               </thead>
@@ -429,19 +513,18 @@
                 <template x-for="ord in filteredOrdersList" :key="ord.id">
                   <tr>
                     <td class="cell-id" x-text="'#' + ord.id"></td>
-                    <td style="font-weight: 500;" x-text="ord.service_name"></td>
+                    <td style="font-weight: 600;" x-text="ord.service_name"></td>
                     <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                      <a :href="ord.link" target="_blank" style="color: var(--accent); text-decoration: underline;" x-text="ord.link"></a>
+                      <a :href="ord.link" target="_blank" style="color: var(--accent);" x-text="ord.link"></a>
                     </td>
-                    <td style="font-weight: 600; color: #10b981;" x-text="'$' + ord.charge.toFixed(4)"></td>
-                    <td style="color: var(--text-muted);" x-text="ord.start_count + ' / ' + ord.remains"></td>
-                    <td style="font-weight: 700;" x-text="ord.quantity.toLocaleString()"></td>
+                    <td x-text="ord.quantity.toLocaleString()"></td>
+                    <td style="font-weight: 700; color: #10b981;" x-text="'$' + ord.charge.toFixed(4)"></td>
                     <td>
                       <span class="badge" :class="'badge-' + ord.status" x-text="ord.status.toUpperCase()"></span>
                     </td>
+                    <td x-text="ord.remains"></td>
                     <td style="font-size: 12px; color: var(--text-muted);" x-text="ord.date"></td>
                     <td style="text-align: right;">
-                      <button class="btn btn-xs btn-secondary" x-show="ord.status === 'completed'" @click="alert('Refill request dispatched for Order #' + ord.id)">Refill</button>
                       <button class="btn btn-xs btn-danger" x-show="ord.status === 'pending'" @click="cancelOrder(ord)">Cancel</button>
                     </td>
                   </tr>
@@ -453,50 +536,49 @@
       </div>
     </main>
 
-    <!-- VIEW 5: ADMIN MASTER CONTROL -->
+    <!-- VIEW 5: ADMIN DASHBOARD -->
     <main x-show="currentView === 'admin-dashboard'" class="panel-body" style="max-width: 1200px; margin: 0 auto; padding: 24px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div>
-          <h2 style="font-size: 22px; font-weight: 700; color: #f87171;">Admin Master Control Panel</h2>
-          <p style="color: var(--text-muted); font-size: 13px;">Enterprise SMM Operations &bull; Provider Sync &bull; Automated API</p>
+          <h2 style="font-size: 22px; font-weight: 700; color: #7c3aed;">Master Admin Control Center</h2>
+          <p style="color: var(--text-muted); font-size: 13px;">Full system telemetry, multi-provider dispatch & user ledger control</p>
         </div>
-        <span class="badge badge-danger">ADMINISTRATOR</span>
+        <button class="btn btn-secondary btn-sm" @click="currentView = 'user-dashboard'">Switch to Client View</button>
       </div>
 
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+          <div class="metric-icon" style="background: #f5f3ff; color: #7c3aed;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          </div>
+          <div class="metric-data">
+            <div class="metric-label">Registered Users</div>
+            <div class="metric-value" x-text="users.length"></div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon" style="background: #ecfdf5; color: #10b981;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
           </div>
           <div class="metric-data">
             <div class="metric-label">Gross Revenue</div>
-            <div class="metric-value">$142,850.00</div>
+            <div class="metric-value" style="color: #10b981;">$34,819.50</div>
           </div>
         </div>
 
         <div class="metric-card">
-          <div class="metric-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M2 10h20"/></svg>
+          <div class="metric-icon" style="background: #eff6ff; color: #2563eb;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
           </div>
           <div class="metric-data">
-            <div class="metric-label">User Deposits</div>
-            <div class="metric-value">$98,420.00</div>
+            <div class="metric-label">Provider Balance</div>
+            <div class="metric-value">$5,150.65</div>
           </div>
         </div>
 
         <div class="metric-card">
-          <div class="metric-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-          </div>
-          <div class="metric-data">
-            <div class="metric-label">Total Users</div>
-            <div class="metric-value">1,492</div>
-          </div>
-          <span class="metric-sub">Active Clients</span>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+          <div class="metric-icon" style="background: #fffbeb; color: #f59e0b;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
           </div>
           <div class="metric-data">
@@ -523,7 +605,7 @@
           <div class="card-body">
             <div style="display: flex; flex-direction: column; gap: 12px;">
               <template x-for="p in providers" :key="p.id">
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #ffffff; border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-sm);">
                   <div>
                     <div style="font-weight: 600;" x-text="p.name"></div>
                     <div style="font-size: 12px; color: var(--text-muted);" x-text="p.api_url"></div>
@@ -556,25 +638,25 @@
             <strong>Your API Key:</strong> <code>smm_demo_client_key_112233</code>
           </div>
 
-          <h4 style="font-size: 15px; margin: 20px 0 8px; color: #60a5fa;">1. Action: services</h4>
+          <h4 style="font-size: 15px; margin: 20px 0 8px; color: #7c3aed;">1. Action: services</h4>
           <pre class="code-block">POST /api/v2.php
 key=smm_demo_client_key_112233&action=services</pre>
 
-          <h4 style="font-size: 15px; margin: 20px 0 8px; color: #60a5fa;">2. Action: add</h4>
+          <h4 style="font-size: 15px; margin: 20px 0 8px; color: #7c3aed;">2. Action: add</h4>
           <pre class="code-block">POST /api/v2.php
 key=smm_demo_client_key_112233&action=add&service=101&link=https://instagram.com/p/xxx&quantity=1000
 
 // Success response:
 { "order": 12845 }</pre>
 
-          <h4 style="font-size: 15px; margin: 20px 0 8px; color: #60a5fa;">3. Action: status</h4>
+          <h4 style="font-size: 15px; margin: 20px 0 8px; color: #7c3aed;">3. Action: status</h4>
           <pre class="code-block">POST /api/v2.php
 key=smm_demo_client_key_112233&action=status&order=12845
 
 // Response:
 { "charge": "0.8500", "start_count": "1420", "status": "COMPLETED", "remains": "0", "currency": "USD" }</pre>
 
-          <h4 style="font-size: 15px; margin: 20px 0 8px; color: #60a5fa;">4. Action: balance</h4>
+          <h4 style="font-size: 15px; margin: 20px 0 8px; color: #7c3aed;">4. Action: balance</h4>
           <pre class="code-block">POST /api/v2.php
 key=smm_demo_client_key_112233&action=balance
 
@@ -594,6 +676,32 @@ key=smm_demo_client_key_112233&action=balance
           searchQuery: '',
           selectedCategory: 'all',
           orderTab: 'all',
+          isLoggedIn: true,
+
+          // Registered Users Database
+          users: [
+            { id: 1, username: 'admin', email: 'admin@apexsmm.com', role: 'admin', balance: 500.00 },
+            { id: 2, username: 'demouser', email: 'demo@apexsmm.com', role: 'user', balance: 84.50 }
+          ],
+          currentUser: { id: 2, username: 'demouser', email: 'demo@apexsmm.com', role: 'user' },
+
+          // Registration Form State
+          regForm: {
+            username: '',
+            email: '',
+            password: '',
+            confirm_password: ''
+          },
+          regError: '',
+          regSuccess: '',
+
+          // Login Form State
+          loginForm: {
+            username: 'demouser',
+            password: ''
+          },
+          loginError: '',
+          loginSuccess: '',
           
           categories: [
             { id: 1, name: 'Instagram Followers [Guaranteed / Real]' },
@@ -674,6 +782,100 @@ key=smm_demo_client_key_112233&action=balance
             });
           },
 
+          // User Registration Handler with complete validation matching backend
+          handleRegister() {
+            this.regError = '';
+            this.regSuccess = '';
+            const u = (this.regForm.username || '').trim();
+            const e = (this.regForm.email || '').trim().toLowerCase();
+            const p = this.regForm.password || '';
+            const cp = this.regForm.confirm_password || '';
+
+            // 1. Validate required fields
+            if (!u) {
+              this.regError = 'Username is required.';
+              return;
+            }
+            if (u.length < 3 || u.length > 30) {
+              this.regError = 'Username must be between 3 and 30 characters.';
+              return;
+            }
+            if (!/^[a-zA-Z0-9_]+$/.test(u)) {
+              this.regError = 'Username can only contain letters, numbers, and underscores.';
+              return;
+            }
+            if (!e || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
+              this.regError = 'Please enter a valid email address.';
+              return;
+            }
+            if (p.length < 6) {
+              this.regError = 'Password does not meet the requirements. Minimum 6 characters required.';
+              return;
+            }
+            if (p !== cp) {
+              this.regError = 'Passwords do not match. Please re-enter.';
+              return;
+            }
+
+            // 2. Check duplicate username or email
+            const existing = this.users.find(x => x.username.toLowerCase() === u.toLowerCase() || x.email.toLowerCase() === e);
+            if (existing) {
+              if (existing.username.toLowerCase() === u.toLowerCase()) {
+                this.regError = 'Username already exists. Please choose a different username.';
+              } else {
+                this.regError = 'Email address already registered. Please sign in or use another email.';
+              }
+              return;
+            }
+
+            // 3. Register user safely
+            const newUser = {
+              id: this.users.length + 1,
+              username: u,
+              email: e,
+              role: 'user',
+              balance: 0.00
+            };
+            this.users.push(newUser);
+
+            // 4. Success feedback and transition to login
+            this.regForm = { username: '', email: '', password: '', confirm_password: '' };
+            this.loginForm.username = u;
+            this.loginForm.password = '';
+            this.loginSuccess = 'Registration successful! You can now log in to your account.';
+            this.loginError = '';
+            this.currentView = 'login';
+          },
+
+          // User Login Handler
+          handleLogin() {
+            this.loginError = '';
+            const u = (this.loginForm.username || '').trim().toLowerCase();
+            const p = this.loginForm.password || '';
+
+            const user = this.users.find(x => x.username.toLowerCase() === u || x.email.toLowerCase() === u);
+            if (!user) {
+              this.loginError = 'Invalid credentials. Please verify your username and password.';
+              return;
+            }
+
+            this.currentUser = user;
+            this.isLoggedIn = true;
+            this.userBalance = user.balance;
+            this.loginSuccess = '';
+            if (user.role === 'admin') {
+              this.currentView = 'admin-dashboard';
+            } else {
+              this.currentView = 'user-dashboard';
+            }
+          },
+
+          logout() {
+            this.isLoggedIn = false;
+            this.currentUser = null;
+            this.currentView = 'landing';
+          },
+
           onOrderCategoryChange() {
             const services = this.activeCategoryServices;
             if (services.length > 0) {
@@ -716,7 +918,7 @@ key=smm_demo_client_key_112233&action=balance
 
           submitOrder() {
             if (this.orderCharge > this.userBalance) {
-              alert('Insufficient balance. Please add funds first.');
+              alert('Insufficient balance. Please deposit funds first.');
               return;
             }
             const newId = 10825 + this.ordersList.length;
@@ -751,7 +953,7 @@ key=smm_demo_client_key_112233&action=balance
 
           quickDeposit(amount) {
             this.userBalance += amount;
-            alert('Deposit of $' + amount + ' simulated successfully! New balance: $' + this.userBalance.toFixed(2));
+            alert('Deposit of $' + amount + ' completed successfully! New balance: $' + this.userBalance.toFixed(2));
           },
 
           renderClientChart() {
@@ -760,13 +962,13 @@ key=smm_demo_client_key_112233&action=balance
             const options = {
               series: [{ name: 'Spend ($)', data: [12.4, 18.2, 8.5, 32.0, 24.5, 15.0, 4.25] }],
               chart: { type: 'area', height: 260, toolbar: { show: false }, background: 'transparent' },
-              colors: ['#3b82f6'],
-              fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 95, 100] } },
+              colors: ['#7c3aed'],
+              fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [0, 95, 100] } },
               stroke: { curve: 'smooth', width: 3 },
-              xaxis: { categories: ['Oct 01', 'Oct 02', 'Oct 03', 'Oct 04', 'Oct 05', 'Oct 06', 'Oct 07'], labels: { style: { colors: '#94a3b8' } }, axisBorder: { show: false } },
-              yaxis: { labels: { formatter: val => '$' + val.toFixed(2), style: { colors: '#94a3b8' } } },
-              grid: { borderColor: 'rgba(255, 255, 255, 0.06)' },
-              tooltip: { theme: 'dark' }
+              xaxis: { categories: ['Oct 01', 'Oct 02', 'Oct 03', 'Oct 04', 'Oct 05', 'Oct 06', 'Oct 07'], labels: { style: { colors: '#64748b' } }, axisBorder: { show: false } },
+              yaxis: { labels: { formatter: val => '$' + val.toFixed(2), style: { colors: '#64748b' } } },
+              grid: { borderColor: '#e2e8f0' },
+              tooltip: { theme: 'light' }
             };
             new ApexCharts(el, options).render();
           },
@@ -778,10 +980,10 @@ key=smm_demo_client_key_112233&action=balance
               series: [38200, 5420, 3100, 1499],
               chart: { type: 'donut', height: 270, background: 'transparent' },
               labels: ['Completed', 'In Progress', 'Pending', 'Canceled'],
-              colors: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
-              legend: { position: 'bottom', labels: { colors: '#94a3b8' } },
-              stroke: { colors: ['#111827'], width: 2 },
-              tooltip: { theme: 'dark' }
+              colors: ['#10b981', '#7c3aed', '#f59e0b', '#ef4444'],
+              legend: { position: 'bottom', labels: { colors: '#334155' } },
+              stroke: { colors: ['#ffffff'], width: 2 },
+              tooltip: { theme: 'light' }
             };
             new ApexCharts(el, options).render();
           }

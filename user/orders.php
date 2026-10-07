@@ -53,10 +53,10 @@ $counts = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order History - ApexSMM Enterprise</title>
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 </head>
-<body class="theme-dark panel-layout" x-data="{ sidebarOpen: false }">
+<body class="theme-light panel-layout" x-data="{ sidebarOpen: false }">
 
     <aside class="sidebar" :class="{ 'open': sidebarOpen }">
         <div class="sidebar-header">
